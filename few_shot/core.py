@@ -46,7 +46,6 @@ class NShotTaskSampler(Sampler):
         self.n = n
         self.q = q
         self.fixed_tasks = fixed_tasks
-
         self.i_task = 0
 
     def __len__(self):
@@ -70,14 +69,15 @@ class NShotTaskSampler(Sampler):
                 support_k = {k: None for k in episode_classes}
                 for k in episode_classes:
                     # Select support examples
-                    support = df[df['class_id'] == k].sample(self.n)
+                    support = df[df['class_id'] == k].sample(self.n, replace=False)
                     support_k[k] = support
 
                     for i, s in support.iterrows():
                         batch.append(s['id'])
 
                 for k in episode_classes:
-                    query = df[(df['class_id'] == k) & (~df['id'].isin(support_k[k]['id']))].sample(self.q)
+                    query = df[(df['class_id'] == k) & (~df['id'].isin(support_k[k]['id']))].sample(self.q,
+                                                                                                    replace=False)
                     for i, q in query.iterrows():
                         batch.append(q['id'])
 
@@ -85,7 +85,7 @@ class NShotTaskSampler(Sampler):
 
 
 class EvaluateFewShot(Callback):
-    """Evaluate a network on  an n-shot, k-way classification tasks after every epoch.
+    """Evaluate a network on an n-shot, k-way classification tasks after every epoch.
 
     # Arguments
         eval_fn: Callable to perform few-shot classification. Examples include `proto_net_episode`,
@@ -165,6 +165,7 @@ def prepare_nshot_task(n: int, k: int, q: int) -> Callable:
     # Returns
         prepare_nshot_task_: A Callable that processes a few shot tasks with specified n, k and q
     """
+
     def prepare_nshot_task_(batch: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         """Create 0-k label and move to GPU.
 

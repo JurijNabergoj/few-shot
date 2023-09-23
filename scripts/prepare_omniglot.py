@@ -11,8 +11,8 @@ Networks papers.
 """
 from skimage import io
 from skimage import transform
+import numpy as np
 import zipfile
-import shutil
 import os
 
 from config import DATA_PATH
@@ -31,15 +31,13 @@ def handle_characters(alphabet_folder, character_folder, rotate):
         character_name = root.split('/')[-1]
         mkdir(f'{alphabet_folder}.{rotate}/{character_name}')
         for img_path in character_images:
-            # print(root+'/'+img_path)
             img = io.imread(root+'/'+img_path)
             img = transform.rotate(img, angle=rotate)
             img = transform.resize(img, output_shape, anti_aliasing=True)
             img = (img - img.min()) / (img.max() - img.min())
-            # print(img.min(), img.max())
-            # print(f'{alphabet_folder}.{rotate}/{character_name}/{img_path}')
+            img = 255 * img
+            img = img.astype(np.uint8)
             io.imsave(f'{alphabet_folder}.{rotate}/{character_name}/{img_path}', img)
-            # return
 
 
 def handle_alphabet(folder):
@@ -49,10 +47,9 @@ def handle_alphabet(folder):
         mkdir(f'{folder}.{rotate}')
         for root, character_folders, _ in os.walk(folder):
             for character_folder in character_folders:
-                # For each character folder in an alphabet rotate and resize all of the images and save
+                # For each character folder in an alphabet rotate and resize all the images and save
                 # to the new folder
                 handle_characters(folder, root + '/' + character_folder, rotate)
-                # return
 
     # Delete original alphabet
     rmdir(folder)
@@ -62,6 +59,7 @@ def handle_alphabet(folder):
 rmdir(prepared_omniglot_location)
 mkdir(prepared_omniglot_location)
 
+
 # Unzip dataset
 for root, _, files in os.walk(raw_omniglot_location):
     for f in files:
@@ -70,6 +68,7 @@ for root, _, files in os.walk(raw_omniglot_location):
             zip_ref = zipfile.ZipFile(root + f, 'r')
             zip_ref.extractall(prepared_omniglot_location)
             zip_ref.close()
+
 
 print('Processing background set...')
 for root, alphabets, _ in os.walk(prepared_omniglot_location + 'images_background/'):

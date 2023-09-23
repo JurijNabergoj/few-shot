@@ -47,8 +47,8 @@ def proto_net_episode(model: Module,
     # Samples are ordered by the NShotWrapper class as follows:
     # k lots of n support samples from a particular class
     # k lots of q query samples from those classes
-    support = embeddings[:n_shot*k_way]
-    queries = embeddings[n_shot*k_way:]
+    support = embeddings[:n_shot * k_way]
+    queries = embeddings[n_shot * k_way:]
     prototypes = compute_prototypes(support, k_way, n_shot)
 
     # Calculate squared distances between all queries and all prototypes

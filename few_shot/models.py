@@ -15,6 +15,7 @@ class Flatten(nn.Module):
     # Arguments
         input: Input tensor
     """
+
     def forward(self, input):
         return input.view(input.size(0), -1)
 
@@ -25,6 +26,7 @@ class GlobalMaxPool1d(nn.Module):
     # Arguments
         input: Input tensor
     """
+
     def forward(self, input):
         return nn.functional.max_pool1d(input, kernel_size=input.size()[2:]).view(-1, input.size(1))
 
@@ -35,6 +37,7 @@ class GlobalAvgPool2d(nn.Module):
     # Arguments
         input: Input tensor
     """
+
     def forward(self, input):
         return nn.functional.avg_pool2d(input, kernel_size=input.size()[2:]).view(-1, input.size(1))
 
@@ -117,9 +120,7 @@ class FewShotClassifier(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-
         x = x.view(x.size(0), -1)
-
         return self.logits(x)
 
     def functional_forward(self, x, weights):
@@ -145,7 +146,7 @@ class MatchingNetwork(nn.Module):
             n: Number of examples per class in the support set
             k: Number of classes in the few shot classification task
             q: Number of examples per class in the query set
-            fce: Whether or not to us fully conditional embeddings
+            fce: Whether to us fully conditional embeddings
             num_input_channels: Number of color channels the model expects input data to contain. Omniglot = 1,
                 miniImageNet = 3
             lstm_layers: Number of LSTM layers in the bidrectional LSTM g that embeds the support set (fce = True)
@@ -222,7 +223,7 @@ class AttentionLSTM(nn.Module):
     def forward(self, support, queries):
         # Get embedding dimension, d
         if support.shape[-1] != queries.shape[-1]:
-            raise(ValueError("Support and query set have different embedding dimension!"))
+            raise (ValueError("Support and query set have different embedding dimension!"))
 
         batch_size = queries.shape[0]
         embedding_dim = queries.shape[1]
@@ -249,3 +250,85 @@ class AttentionLSTM(nn.Module):
         h = h_hat + queries
 
         return h
+
+
+class RelationNetwork(nn.Module):
+    def __init__(self, n: int, k: int, q: int, num_input_channels: int,
+                 device: torch.device):
+        """Creates a Relation Network as described in ...
+
+        # Arguments:
+            n: Number of examples per class in the support set
+            k: Number of classes in the few shot classification task
+            q: Number of examples per class in the query set
+            fce: Whether to us fully conditional embeddings
+            num_input_channels: Number of color channels the model expects input data to contain. Omniglot = 1,
+                miniImageNet = 3
+            device: Device on which to run computation
+        """
+        super(RelationNetwork, self).__init__()
+        self.n = n
+        self.k = k
+        self.q = q
+        self.encoder = CNNEncoder(num_input_channels)
+        self.relation = RelationModel(64, 8).to(device, dtype=torch.double)
+
+    def forward(self, inputs):
+        pass
+
+
+class CNNEncoder(nn.Module):
+    """docstring for ClassName"""
+
+    def __init__(self, num_input_channels):
+        super(CNNEncoder, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(num_input_channels, 64, kernel_size=3, padding=0),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=0),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU())
+        self.layer4 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU())
+
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        return out
+
+
+class RelationModel(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(RelationModel, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = out.view(out.size(0), -1)
+        out = F.relu(self.fc1(out))
+        out = F.sigmoid(self.fc2(out))
+        return out

@@ -32,7 +32,7 @@ def matching_net_episode(model: Module,
         k_way: Number of classes in the few shot classification task
         q_queries: Number of examples per class in the query set
         distance: Distance metric to use when calculating distance between support and query set samples
-        fce: Whether or not to us fully conditional embeddings
+        fce: Whether to us fully conditional embeddings
         train: Whether (True) or not (False) to perform a parameter update
 
     # Returns
@@ -61,7 +61,7 @@ def matching_net_episode(model: Module,
         # shape (k_way * n_shot, embedding_dim) and we want the LSTM to treat the
         # support set as a sequence so add a single dimension to transform support set
         # to the shape (k_way * n_shot, 1, embedding_dim) and then remove the batch dimension
-        # afterwards
+        # afterward
 
         # Calculate the fully conditional embedding, g, for support set samples as described
         # in appendix A.2 of the paper. g takes the form of a bidirectional LSTM with a
@@ -92,7 +92,7 @@ def matching_net_episode(model: Module,
     if train:
         # Backpropagate gradients
         loss.backward()
-        # I found training to be quite unstable so I clip the norm
+        # I found training to be quite unstable, so I clip the norm
         # of the gradient to be at most 1
         clip_grad_norm_(model.parameters(), 1)
         # Take gradient step

@@ -502,6 +502,7 @@ class LearningRateScheduler(Callback):
         self.verbose = verbose
 
     def on_train_begin(self, logs=None):
+
         self.optimiser = self.params['optimiser']
 
     def on_epoch_begin(self, epoch, logs=None):
